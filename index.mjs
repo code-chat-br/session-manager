@@ -28,7 +28,7 @@ if (!existsSync(INSTANCE_PATH)) {
   mkdirSync(INSTANCE_PATH, { recursive: true });
 }
 
-app.options("/session/ping", function (req, res) {
+app.options("/session/:prefix/ping", function (req, res) {
   logger("Http - Path: ", req.path);
   res.status(200).json({ pong: true });
 });
@@ -46,7 +46,7 @@ app.post("/session/:prefix", function (req, res) {
   res.status(202).send();
 });
 
-app.post(`/session/:prefix/:instance/:key`, function (req, res) {
+app.post("/session/:prefix/:instance/:key", function (req, res) {
   const { prefix, instance, key } = req.params;
   const body = req.body;
 
@@ -80,7 +80,7 @@ app.delete("/session/:prefix/:instance/:key", function (req, res) {
   res.status(200).send();
 });
 
-app.delete(`/session/:prefix/:instance`, function (req, res) {
+app.delete("/session/:prefix/:instance", function (req, res) {
   const { prefix, instance } = req.params;
 
   const path = join(`${INSTANCE_PATH}/${prefix}`, instance);
@@ -90,7 +90,7 @@ app.delete(`/session/:prefix/:instance`, function (req, res) {
   res.status(200).send();
 });
 
-app.get("/session/list-instances/:prefix", function (req, res) {
+app.get("/session/:prefix/list-instances", function (req, res) {
   const { prefix } = req.params;
 
   const path = `${INSTANCE_PATH}/${prefix}`;
