@@ -1,5 +1,4 @@
-/node_modules
-/instances/*
-!/instances/.gitkeep
-yarn.lock
-package-lock.json
+.env
+go.sum
+instances
+main

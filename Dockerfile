@@ -1,19 +1,19 @@
-FROM node:20-bullseye-slim
+FROM golang:1.22.3-bullseye
 
-WORKDIR /worker
-
-LABEL API_VERSION="0.0.1"
-LABEL MANTAINER="https://github.com/code-chat-br"
-LABEL REPOSITORY="https://github.com/code-chat-br/whatsapp-api"
-
-COPY package*.json ./
-
-RUN apt-get update && apt-get install -y git && npm install
-
-COPY ./index.mjs .
-
-RUN mkdir instances
+LABEL version="0.0.1" description="Worker HTTP para Gerenciamento de Sessões na API de WhatsApp" 
+LABEL maintainer="jrCleber" git="https://github.com/jrCleber"
+LABEL contact="suporte@codechat.dev"
 
 ENV DOCKER_ENV=true
 
-ENTRYPOINT [ "npm", "start" ]
+WORKDIR /worker
+
+COPY go.mod .
+
+RUN go mod tidy
+
+COPY ./main .
+
+RUN mkdir -p ./instances
+
+CMD [ "./main" ]
