@@ -1,6 +1,6 @@
 # Implementação de um Worker HTTP para Gerenciamento de Sessões na API de WhatsApp
 
-## Worker HTTP para a API de WhatsApp
+## Worker HTTP para a API do WhatsApp
 
 Este worker HTTP é um sistema que gerencia os arquivos de conexão das sessões do WhatsApp. Ele escuta requisições HTTP na porta **5656**, recebe e armazena arquivos de sessão, e também recupera esses arquivos quando solicitado. A segurança é garantida mantendo o worker na mesma rede que a API de WhatsApp, e a porta do worker não é exposta ao público. O worker pode ser executado em um ambiente Docker e está pronto para futuras expansões e refinamentos.
 
