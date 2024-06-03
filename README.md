@@ -134,4 +134,4 @@ As discurções sobre esse worker devem ser realizadas [aqui](https://github.com
 
 - [Dockerfile](./Dockerfile)
 - [docker-compose](./docker-compose.yaml)
-- [codechat/worker:develop](https://hub.docker.com/r/codechat/worker/tags)
+- [codechat/session-manager](https://hub.docker.com/r/codechat/session-manager)
