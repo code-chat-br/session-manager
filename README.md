@@ -22,7 +22,7 @@ Além disso, um token global deve ser definido nas variáveis de ambiente. O cli
 
 ## Estrutura do projeto
 ```
-/worker-sessio
+/worker-session
 ├── /.vscode
 │   └── settings.json
 │
