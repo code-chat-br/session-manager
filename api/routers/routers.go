@@ -23,7 +23,7 @@ func ResponseRequest(handle HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		render.JSON(w, r, response)
+		render.JSON(w, r, response.ResponseError())
 	}
 }
 
