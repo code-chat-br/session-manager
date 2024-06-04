@@ -1,72 +1,79 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 )
 
 type Response struct {
-	Code int    `json:"statusCode"`
-	Data any    `json:"message,omitempty"`
-	Err  string `json:"error"`
+	code int
+	data any
+	err  string
 }
 
 func NewResponse(code int) *Response {
-	return &Response{Code: code}
+	return &Response{code: code}
 }
 
 func (r *Response) SetCode(code int) {
-	r.Code = code
+	r.code = code
 }
 
 func (r *Response) SetData(data any) {
-	r.Data = data
+	r.data = data
 }
 
 func (r *Response) SetError(err error) {
-	r.Err = err.Error()
+	r.err = err.Error()
 }
 
 func (r *Response) GetCode() int {
-	return r.Code
+	return r.code
 }
 
 func (r *Response) GetData() any {
-	return r.Data
+	return r.data
 }
 
-func extractErrorDetails(errMsg string) (fieldName string, dataType string) {
-	fieldIndex := strings.Index(errMsg, "field ")
-	ofIndex := strings.Index(errMsg, " of")
-	if fieldIndex == -1 || ofIndex == -1 {
+func (r *Response) ResponseError() map[string]any {
+	return map[string]any{
+		"statusCode": r.code,
+		"message":    r.data,
+		"error":      r.err,
+	}
+}
+
+func extractErrorDetails(err_msg string) (fieldName string, dataType string) {
+	field_index := strings.Index(err_msg, "field ")
+	of_index := strings.Index(err_msg, " of")
+	if field_index == -1 || of_index == -1 {
 		return "", ""
 	}
-	fieldName = errMsg[fieldIndex+6 : ofIndex]
+	fieldName = err_msg[field_index+6 : of_index]
 
-	typeIndex := strings.Index(errMsg, "type ")
+	typeIndex := strings.Index(err_msg, "type ")
 	if typeIndex == -1 {
 		return fieldName, ""
 	}
-	dataType = errMsg[typeIndex+5:]
+	dataType = err_msg[typeIndex+5:]
 
 	return fieldName, dataType
 }
 
 func UnmarshalDescriptionError(e error) *Response {
 	if e != nil {
+		response := NewResponse(http.StatusBadRequest)
 		if e.Error() == "EOF" {
-			return &Response{
-				Code: http.StatusBadRequest,
-				Data: []string{"body is empty"},
-				Err:  "Bad Request",
-			}
+			response.SetData([]string{"body is empty"})
+			response.SetError(errors.New("bad_request"))
+			return response
 		}
-		fieldName, dataType := extractErrorDetails(e.Error())
-		return &Response{
-			Code: http.StatusBadRequest,
-			Data: []string{fieldName + " must be of type " + dataType + "."},
-			Err:  "Bad Request",
-		}
+		field_name, data_type := extractErrorDetails(e.Error())
+		response.SetData([]string{fmt.Sprintf("%s must be of type %s", field_name, data_type)})
+		response.SetError(errors.New("bad_request"))
+		return response
 	}
 
 	return nil

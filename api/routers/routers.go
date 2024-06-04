@@ -23,7 +23,7 @@ func ResponseRequest(handle HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		render.JSON(w, r, response)
+		render.JSON(w, r, response.ResponseError())
 	}
 }
 
@@ -46,6 +46,6 @@ func NotFound(r *chi.Mux) {
 		response.SetError(errors.New("not_found"))
 
 		render.Status(r, response.GetCode())
-		render.JSON(w, r, response)
+		render.JSON(w, r, response.ResponseError())
 	})
 }

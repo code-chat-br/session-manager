@@ -18,7 +18,7 @@ func NewSession(service *session.Service) *Session {
 	return &Session{service: service}
 }
 
-func getParams(r *http.Request) (string, string, string) {
+func get_params(r *http.Request) (string, string, string) {
 	group := chi.URLParam(r, "group")
 	instance := chi.URLParam(r, "instance")
 	key := chi.URLParam(r, "key")
@@ -46,7 +46,7 @@ func (h *Session) POST_Group(r *http.Request) *Response {
 }
 
 func (h *Session) DELETE_Group(r *http.Request) *Response {
-	params_group, _, _ := getParams(r)
+	params_group, _, _ := get_params(r)
 
 	status, err := h.service.RemoveGroup(params_group)
 
@@ -69,7 +69,7 @@ func (h *Session) POST_InstanceDB(r *http.Request) *Response {
 		return err
 	}
 
-	params_group, _, _ := getParams(r)
+	params_group, _, _ := get_params(r)
 
 	status, err := h.service.CreateInstanceDb(params_group, body["instance"])
 
@@ -84,7 +84,7 @@ func (h *Session) POST_InstanceDB(r *http.Request) *Response {
 }
 
 func (h *Session) DELETE_InstanceDB(r *http.Request) *Response {
-	params_group, params_instance, _ := getParams(r)
+	params_group, params_instance, _ := get_params(r)
 
 	status, err := h.service.RemoveInstanceDb(params_group, params_instance)
 
@@ -107,7 +107,7 @@ func (h *Session) POST_Credentials(r *http.Request) *Response {
 		return err
 	}
 
-	params_group, params_instance, params_key := getParams(r)
+	params_group, params_instance, params_key := get_params(r)
 
 	status, err := h.service.WriterCredentials(
 		params_group, params_instance, params_key, body,
@@ -124,7 +124,7 @@ func (h *Session) POST_Credentials(r *http.Request) *Response {
 }
 
 func (h *Session) GET_Credentials(r *http.Request) *Response {
-	params_group, params_instance, params_key := getParams(r)
+	params_group, params_instance, params_key := get_params(r)
 
 	status, binary, err := h.service.ReadCredentials(
 		params_group, params_instance, params_key,
@@ -156,7 +156,7 @@ func (h *Session) GET_Credentials(r *http.Request) *Response {
 }
 
 func (h *Session) DELETE_Credentials(r *http.Request) *Response {
-	params_group, params_instance, params_key := getParams(r)
+	params_group, params_instance, params_key := get_params(r)
 
 	status, err := h.service.RemoveCredential(
 		params_group, params_instance, params_key,
@@ -173,7 +173,7 @@ func (h *Session) DELETE_Credentials(r *http.Request) *Response {
 }
 
 func (h *Session) GET_ListInstances(r *http.Request) *Response {
-	params_group, _, _ := getParams(r)
+	params_group, _, _ := get_params(r)
 
 	status, list, err := h.service.ListInstances(params_group)
 
