@@ -9,8 +9,7 @@ LABEL codechat.worker.contact="suporte@codechat.dev"
 ENV DOCKER_ENV=true
 ENV CGO_ENABLED=1
 
-RUN apt-get install gcc
-RUN apt-get install build-essential
+RUN apt-get update && apt-get install -y gcc build-essential
 
 WORKDIR /worker
 
