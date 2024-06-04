@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"worker-session/internal/session"
 
@@ -25,14 +26,14 @@ func getParams(r *http.Request) (string, string, string) {
 	return group, instance, key
 }
 
-func (h *Session) POST_GroupFolder(r *http.Request) *Response {
+func (h *Session) POST_Group(r *http.Request) *Response {
 	var body map[string]string
 	e := render.DecodeJSON(r.Body, &body)
 	if err := UnmarshalDescriptionError(e); err != nil {
 		return err
 	}
 
-	status, err := h.service.CreateFolder(body["group"], "")
+	status, err := h.service.CreateGroup(body["group"])
 
 	response := NewResponse(status)
 
@@ -44,7 +45,24 @@ func (h *Session) POST_GroupFolder(r *http.Request) *Response {
 	return response
 }
 
-func (h *Session) POST_InstanceFolder(r *http.Request) *Response {
+func (h *Session) DELETE_Group(r *http.Request) *Response {
+	params_group, _, _ := getParams(r)
+
+	status, err := h.service.RemoveGroup(params_group)
+
+	response := NewResponse(status)
+
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+
+	response.SetCode(status)
+
+	return response
+}
+
+func (h *Session) POST_InstanceDB(r *http.Request) *Response {
 	var body map[string]string
 	e := render.DecodeJSON(r.Body, &body)
 	if err := UnmarshalDescriptionError(e); err != nil {
@@ -53,7 +71,7 @@ func (h *Session) POST_InstanceFolder(r *http.Request) *Response {
 
 	params_group, _, _ := getParams(r)
 
-	status, err := h.service.CreateFolder(params_group, body["instance"])
+	status, err := h.service.CreateInstanceDb(params_group, body["instance"])
 
 	response := NewResponse(status)
 
@@ -65,10 +83,10 @@ func (h *Session) POST_InstanceFolder(r *http.Request) *Response {
 	return response
 }
 
-func (h *Session) DELETE_InstanceFolder(r *http.Request) *Response {
+func (h *Session) DELETE_InstanceDB(r *http.Request) *Response {
 	params_group, params_instance, _ := getParams(r)
 
-	status, err := h.service.RemoveFolder(params_group, params_instance)
+	status, err := h.service.RemoveInstanceDb(params_group, params_instance)
 
 	response := NewResponse(status)
 
@@ -83,7 +101,7 @@ func (h *Session) DELETE_InstanceFolder(r *http.Request) *Response {
 }
 
 func (h *Session) POST_Credentials(r *http.Request) *Response {
-	var body map[string]string
+	var body map[string]any
 	e := render.DecodeJSON(r.Body, &body)
 	if err := UnmarshalDescriptionError(e); err != nil {
 		return err
@@ -119,9 +137,15 @@ func (h *Session) GET_Credentials(r *http.Request) *Response {
 		return response
 	}
 
+	json_str := string(binary)
+	var unescaped string
+	json.Unmarshal([]byte(json_str), &unescaped)
+
 	var data map[string]any
-	err = json.Unmarshal(binary, &data)
+	err = json.Unmarshal([]byte(unescaped), &data)
+	fmt.Println("2")
 	if err != nil {
+		response.SetCode(http.StatusBadRequest)
 		response.SetError(err)
 		return response
 	}

@@ -49,9 +49,18 @@ Além disso, um token global deve ser definido nas variáveis de ambiente. O cli
 │   └── app.go
 │
 ├── /pkg
-│   └── /config
-│       └── config.go
+│   ├── /config
+│   │   └── config.go
+│   └── /db
+│       ├── /models
+│       │   └── creds_model.go
+│       └── conn.go
 │
+├── /tmp
+│   ├── build-errors.log
+│   └── main
+│
+├── .air.toml
 ├── .env
 ├── .gitignore
 ├── build.sh
@@ -62,6 +71,20 @@ Além disso, um token global deve ser definido nas variáveis de ambiente. O cli
 ├── main
 └── README.md
 ```
+
+---
+## Ajuste de compatibilidade com SQLite se necessário
+
+- `build-essential`
+  ```sh
+  sudo apt-get install build-essential
+  ```
+
+- `gcc`
+  ```sh
+  sudo apt-get install gcc
+  ```
+---
 
 ## Instalação
 

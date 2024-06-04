@@ -26,17 +26,17 @@ func (x *Session) Routes() *chi.Mux {
 		r.Use(middlewares.AuthGuard(x.env.GlobalToken))
 
 		// Criando a pasta que conterá o grupo de instâncias
-		r.Post("/", ResponseRequest(x.handler.POST_GroupFolder))
+		r.Post("/", ResponseRequest(x.handler.POST_Group))
 		// Removendo o grupo com todas as instâncias
-		r.Delete("/", ResponseRequest(x.handler.DELETE_InstanceFolder))
+		r.Delete("/", ResponseRequest(x.handler.DELETE_Group))
 	})
 
 	instance_router := chi.NewRouter()
 	instance_router.Route("/", func(r chi.Router) {
 		r.Use(middlewares.LimitBodySize(x.env.LimitBody))
 
-		r.Post("/", ResponseRequest(x.handler.POST_InstanceFolder))
-		r.Delete("/{instance}", ResponseRequest(x.handler.DELETE_InstanceFolder))
+		r.Post("/", ResponseRequest(x.handler.POST_InstanceDB))
+		r.Delete("/{instance}", ResponseRequest(x.handler.DELETE_InstanceDB))
 
 		r.Post("/{instance}/{key}", ResponseRequest(x.handler.POST_Credentials))
 		r.Get("/{instance}/{key}", ResponseRequest(x.handler.GET_Credentials))

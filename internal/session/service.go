@@ -1,19 +1,49 @@
 package session
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
+	"worker-session/pkg/db"
+	"worker-session/pkg/db/models"
 
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const INSTANCE_PATH string = "instances"
 
 type Service struct {
 	logger *logrus.Entry
+}
+
+type ManagerDB map[string]*gorm.DB
+
+var db_connections = make(ManagerDB)
+var mutex sync.Mutex
+
+func connect_db(path, db_name string) (*gorm.DB, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if db, exists := db_connections[db_name]; exists {
+		return db, nil
+	}
+
+	conn, err := db.InitializerDB(filepath.Join(path, db_name))
+	if err != nil {
+		return nil, err
+	}
+
+	conn.AutoMigrate(&models.Creds{})
+
+	db_connections[db_name] = conn
+
+	return conn, nil
 }
 
 func New() *Service {
@@ -32,8 +62,8 @@ func (s *Service) Create(folder string) error {
 	return nil
 }
 
-func (s *Service) CreateFolder(group, instance_name string) (int, error) {
-	path_name := filepath.Join(INSTANCE_PATH, group, instance_name)
+func (s *Service) CreateGroup(group string) (int, error) {
+	path_name := filepath.Join(INSTANCE_PATH, group)
 	if err := s.Create(path_name); err != nil {
 		s.logger.WithField("func", "CreateInstanceFolder").Log(logrus.ErrorLevel, err)
 		return http.StatusInternalServerError, err
@@ -44,10 +74,11 @@ func (s *Service) CreateFolder(group, instance_name string) (int, error) {
 	return http.StatusNoContent, nil
 }
 
-func (s *Service) RemoveFolder(group, instance_name string) (int, error) {
-	path_name := filepath.Join(INSTANCE_PATH, group, instance_name)
+func (s *Service) RemoveGroup(group string) (int, error) {
+	path_name := filepath.Join(INSTANCE_PATH, group)
 	if err := os.RemoveAll(path_name); err != nil {
 		s.logger.WithField("func", "RemoveFolder").Log(logrus.ErrorLevel, err)
+
 		return http.StatusInternalServerError, err
 	}
 
@@ -56,70 +87,122 @@ func (s *Service) RemoveFolder(group, instance_name string) (int, error) {
 	return http.StatusOK, nil
 }
 
-func (s *Service) WriterCredentials(group, instance_name, key string, json map[string]string) (int, error) {
-	path_name := filepath.Join(INSTANCE_PATH, group, instance_name, key)
-
-	file, err := os.Create(path_name)
+func (s *Service) CreateInstanceDb(group, instance_name string) (int, error) {
+	path_name := filepath.Join(INSTANCE_PATH, group)
+	db, err := connect_db(path_name, instance_name)
 	if err != nil {
-		s.logger.WithField("func", "WriterCredentials").Log(logrus.ErrorLevel, err)
+		s.logger.WithField("func", "CreateInstanceDb").Log(logrus.ErrorLevel, err)
+
 		return http.StatusInternalServerError, err
 	}
-	defer file.Close()
 
-	binary := []byte(json["data"])
+	db.AutoMigrate(&models.Creds{})
+	db_connections[instance_name] = db
 
-	if _, err := file.Write(binary); err != nil {
+	return http.StatusOK, nil
+}
+
+func (s *Service) RemoveInstanceDb(group, instance_name string) (int, error) {
+	path_name := filepath.Join(INSTANCE_PATH, group, instance_name+".db")
+	if err := os.RemoveAll(path_name); err != nil {
+		s.logger.WithField("func", "RemoveInstanceDb").Log(logrus.ErrorLevel, err)
+
+		return http.StatusInternalServerError, err
+	}
+
+	return http.StatusOK, nil
+}
+
+func (s *Service) WriterCredentials(group, instance_name, key string, value map[string]any) (int, error) {
+	path_name := filepath.Join(INSTANCE_PATH, group)
+	db, err := connect_db(path_name, instance_name)
+	if err != nil {
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "WriterCredentials",
+				"func":   "WriterCredentials",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
+
 		return http.StatusInternalServerError, err
+	}
+
+	binary, err := json.Marshal(value["data"])
+	if err != nil {
+		s.logger.
+			WithFields(logrus.Fields{
+				"func":   "WriterCredentials",
+				"status": "controlado",
+			}).
+			Log(logrus.ErrorLevel, err)
+
+		return http.StatusBadRequest, err
+	}
+
+	creds := models.NewCreds(key, binary)
+
+	tx := db.Create(&creds)
+	if tx.Error != nil {
+		s.logger.
+			WithFields(logrus.Fields{
+				"func":   "WriterCredentials",
+				"status": "controlado",
+			}).
+			Log(logrus.ErrorLevel, tx.Error)
+
+		return http.StatusInternalServerError, tx.Error
 	}
 
 	return http.StatusNoContent, nil
 }
 
 func (s *Service) ReadCredentials(group, instance_name, key string) (int, []byte, error) {
-	path_name := filepath.Join(INSTANCE_PATH, group, instance_name, key)
-
-	file, err := os.Open(path_name)
+	path_name := filepath.Join(INSTANCE_PATH, group)
+	db, err := connect_db(path_name, instance_name)
 	if err != nil {
-		// Este erro será o mais exibido no log.
-		//
-		// Sempre que a API buscar alguma chave, e ela não existir,
-		// haverá uma falha ao abrir o arquivo.
-		//
-		// Um erro será retornado à API e uma nova chave como o mesmo
-		// nome e valor será criada pela própria API.
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "ReadCredentials",
+				"func":   "ReadCredentials",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
+
 		return http.StatusInternalServerError, nil, err
 	}
-	defer file.Close()
 
-	binary, err := io.ReadAll(file)
+	var creds models.Creds
+	tx := db.Where("name = ?", key).First(&creds)
+	if tx.Error != nil {
+		return http.StatusBadRequest, nil, tx.Error
+	}
 
-	return http.StatusOK, binary, err
+	return http.StatusOK, creds.Content, nil
 }
 
 func (s *Service) RemoveCredential(group, instance_name, key string) (int, error) {
-	path_name := filepath.Join(INSTANCE_PATH, group, instance_name, key)
-
-	err := os.RemoveAll(path_name)
+	path_name := filepath.Join(INSTANCE_PATH, group)
+	db, err := connect_db(path_name, instance_name)
 	if err != nil {
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "RemoveCredential",
+				"func":   "RemoveCredential.connect_db",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
+
 		return http.StatusInternalServerError, err
+	}
+
+	tx := db.Where("name = ?", key).Delete(&models.Creds{})
+	if tx.Error != nil {
+		s.logger.
+			WithFields(logrus.Fields{
+				"func":   "RemoveCredential.Delete",
+				"status": "controlado",
+			}).
+			Log(logrus.ErrorLevel, tx.Error)
+
+		return http.StatusInternalServerError, tx.Error
 	}
 
 	return http.StatusOK, nil
@@ -131,10 +214,11 @@ func (s *Service) ListInstances(group string) (int, *[]string, error) {
 	if _, err := os.Stat(source); os.IsNotExist(err) {
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "ListInstances",
+				"func":   "ListInstances",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
+
 		return http.StatusInternalServerError, nil, err
 	}
 
@@ -142,18 +226,19 @@ func (s *Service) ListInstances(group string) (int, *[]string, error) {
 	if err != nil {
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "ListInstances",
+				"func":   "ListInstances",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
+
 		return http.StatusInternalServerError, nil, err
 	}
 
 	list := make([]string, len(files))
 
 	for i, file := range files {
-		if file.IsDir() {
-			list[i] = file.Name()
+		if !file.IsDir() {
+			list[i] = strings.Replace(file.Name(), ".db", "", 1)
 		}
 	}
 

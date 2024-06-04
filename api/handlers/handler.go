@@ -6,8 +6,8 @@ import (
 )
 
 type Response struct {
-	Code int      `json:"statusCode"`
-	Data any      `json:"message,omitempty"`
+	Code int    `json:"statusCode"`
+	Data any    `json:"message,omitempty"`
 	Err  string `json:"error"`
 }
 
@@ -58,14 +58,14 @@ func UnmarshalDescriptionError(e error) *Response {
 			return &Response{
 				Code: http.StatusBadRequest,
 				Data: []string{"body is empty"},
-				Err: "Bad Request",
+				Err:  "Bad Request",
 			}
 		}
 		fieldName, dataType := extractErrorDetails(e.Error())
 		return &Response{
 			Code: http.StatusBadRequest,
 			Data: []string{fieldName + " must be of type " + dataType + "."},
-			Err: "Bad Request",
+			Err:  "Bad Request",
 		}
 	}
 
