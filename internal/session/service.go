@@ -61,7 +61,12 @@ func (s *Service) WriterCredentials(group, instance_name, key string, json map[s
 
 	file, err := os.Create(path_name)
 	if err != nil {
-		s.logger.WithField("func", "WriterCredentials").Log(logrus.ErrorLevel, err)
+		s.logger.
+			WithFields(logrus.Fields{
+				"func":   "WriterCredentials",
+				"status": "controlado",
+			}).
+			Log(logrus.ErrorLevel, err)
 		return http.StatusInternalServerError, err
 	}
 	defer file.Close()
@@ -71,7 +76,7 @@ func (s *Service) WriterCredentials(group, instance_name, key string, json map[s
 	if _, err := file.Write(binary); err != nil {
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "WriterCredentials",
+				"func":   "WriterCredentials",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
@@ -93,13 +98,13 @@ func (s *Service) ReadCredentials(group, instance_name, key string) (int, []byte
 		//
 		// Um erro será retornado à API e uma nova chave como o mesmo
 		// nome e valor será criada pela própria API.
-		s.logger.
-			WithFields(logrus.Fields{
-				"func": "ReadCredentials",
-				"status": "controlado",
-			}).
-			Log(logrus.ErrorLevel, err)
-		return http.StatusInternalServerError, nil, err
+		// s.logger.
+		// 	WithFields(logrus.Fields{
+		// 		"func": "ReadCredentials",
+		// 		"status": "controlado",
+		// 	}).
+		// 	Log(logrus.ErrorLevel, err)
+		return http.StatusBadRequest, nil, err
 	}
 	defer file.Close()
 
@@ -115,11 +120,11 @@ func (s *Service) RemoveCredential(group, instance_name, key string) (int, error
 	if err != nil {
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "RemoveCredential",
+				"func":   "RemoveCredential",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
-		return http.StatusInternalServerError, err
+		return http.StatusBadRequest, err
 	}
 
 	return http.StatusOK, nil
@@ -131,22 +136,22 @@ func (s *Service) ListInstances(group string) (int, *[]string, error) {
 	if _, err := os.Stat(source); os.IsNotExist(err) {
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "ListInstances",
+				"func":   "ListInstances",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
-		return http.StatusInternalServerError, nil, err
+		return http.StatusBadRequest, nil, err
 	}
 
 	files, err := os.ReadDir(source)
 	if err != nil {
 		s.logger.
 			WithFields(logrus.Fields{
-				"func": "ListInstances",
+				"func":   "ListInstances",
 				"status": "controlado",
 			}).
 			Log(logrus.ErrorLevel, err)
-		return http.StatusInternalServerError, nil, err
+		return http.StatusBadRequest, nil, err
 	}
 
 	list := make([]string, len(files))
