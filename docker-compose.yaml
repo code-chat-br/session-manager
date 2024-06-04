@@ -7,7 +7,7 @@ networks:
 
 services:
   worker_sessions:
-    image: codechat/session-manager:v0.0.1
+    image: codechat/session-manager:files-v0.0.1
     container_name: codechat_worker
     restart: unless-stopped
     environment:
