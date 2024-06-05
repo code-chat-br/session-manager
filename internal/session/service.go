@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
 
 const INSTANCE_PATH string = "instances"
+
+var mutex sync.Locker
 
 type Service struct {
 	logger *logrus.Entry
@@ -57,6 +60,9 @@ func (s *Service) RemoveFolder(group, instance_name string) (int, error) {
 }
 
 func (s *Service) WriterCredentials(group, instance_name, key string, json map[string]string) (int, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	path_name := filepath.Join(INSTANCE_PATH, group, instance_name, key)
 
 	file, err := os.Create(path_name)
