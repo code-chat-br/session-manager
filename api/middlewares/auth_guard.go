@@ -20,7 +20,7 @@ func AuthGuard(token string) NextFunc {
 				response.SetError(errors.New("Unauthorized"))
 
 				render.Status(r, response.GetCode())
-				render.JSON(w, r, response)
+				render.JSON(w, r, response.ResponseError())
 				return
 			}
 
