@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"worker-session/internal/session"
 
@@ -143,7 +142,6 @@ func (h *Session) GET_Credentials(r *http.Request) *Response {
 
 	var data map[string]any
 	err = json.Unmarshal([]byte(unescaped), &data)
-	fmt.Println("2")
 	if err != nil {
 		response.SetCode(http.StatusBadRequest)
 		response.SetError(err)
