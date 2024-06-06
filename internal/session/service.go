@@ -21,6 +21,7 @@ type Service struct {
 
 func New() *Service {
 	logger := logrus.New()
+	mutex = &sync.Mutex{}
 	return &Service{
 		logger: logger.WithField("desc", "session.Service"),
 	}
