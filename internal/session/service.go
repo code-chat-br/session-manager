@@ -21,10 +21,8 @@ type Service struct {
 	logger *logrus.Entry
 }
 
-type ManagerDB map[string]*gorm.DB
-
-var db_connections = make(ManagerDB)
-var mutex sync.Mutex
+var db_connections = make(db.ManagerDB)
+var mutex sync.Locker
 
 func connect_db(path, db_name string) (*gorm.DB, error) {
 	mutex.Lock()
@@ -48,6 +46,7 @@ func connect_db(path, db_name string) (*gorm.DB, error) {
 
 func New() *Service {
 	logger := logrus.New()
+	mutex = &sync.Mutex{}
 	return &Service{
 		logger: logger.WithField("desc", "session.Service"),
 	}
